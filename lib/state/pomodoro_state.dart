@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/task.dart';
 import '../models/timer_enums.dart';
+import '../models/avatar_level.dart';
 
 class PomodoroState extends ChangeNotifier {
   // Durations in minutes
@@ -34,6 +35,23 @@ class PomodoroState extends ChangeNotifier {
   int get totalFocusSeconds => _totalFocusSeconds;
   int get completedSessions => _completedSessions;
   int get sessionsBeforeLongBreak => _sessionsBeforeLongBreak;
+
+  // Avatar / Gamification
+  AvatarLevel _previousAvatarLevel = AvatarLevel.seed;
+  bool _justLeveledUp = false;
+
+  bool get justLeveledUp => _justLeveledUp;
+
+  AvatarLevelInfo get avatarLevelInfo =>
+      getAvatarLevelInfo(_totalFocusSeconds ~/ 60);
+
+  double get avatarProgressToNextLevel =>
+      getProgressToNextLevel(_totalFocusSeconds ~/ 60);
+
+  void clearLevelUpFlag() {
+    _justLeveledUp = false;
+    // No notifyListeners needed — purely reactive flag
+  }
 
   // Tasks
   final List<Task> _tasks = [];
@@ -120,6 +138,12 @@ class PomodoroState extends ChangeNotifier {
         _secondsRemaining--;
         if (_currentMode == TimerMode.focus) {
           _totalFocusSeconds++;
+          // Check for level-up
+          final newLevel = getAvatarLevelInfo(_totalFocusSeconds ~/ 60).level;
+          if (newLevel != _previousAvatarLevel) {
+            _justLeveledUp = true;
+            _previousAvatarLevel = newLevel;
+          }
         }
         notifyListeners();
       } else {

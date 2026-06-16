@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../state/pomodoro_state.dart';
+import '../widgets/avatar_widget.dart';
+import '../models/avatar_level.dart';
 
 class StatsScreen extends StatelessWidget {
   final PomodoroState state;
@@ -76,6 +78,11 @@ class StatsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // ── Avatar Progress Card ──────────────────────────────
+                  _buildAvatarCard(state, themeColor),
+
+                  const SizedBox(height: 24),
+
                   // Total Focus Time Card
                   Container(
                     padding: const EdgeInsets.all(24),
@@ -299,6 +306,189 @@ class StatsScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildAvatarCard(PomodoroState state, Color themeColor) {
+    final levelInfo = state.avatarLevelInfo;
+    final progress = state.avatarProgressToNextLevel;
+    final nextLevel = getNextLevelInfo(levelInfo.level);
+    final totalMinutes = state.totalFocusSeconds ~/ 60;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF1A1A2E),
+            const Color(0xFF16213E),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: themeColor.withValues(alpha: 0.25),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: themeColor.withValues(alpha: 0.08),
+            blurRadius: 24,
+            spreadRadius: 4,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              // Avatar drawing
+              AvatarWidget(
+                level: levelInfo.level,
+                isTimerRunning: false,
+                size: 110,
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Mijn Plant',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          levelInfo.emoji,
+                          style: const TextStyle(fontSize: 22),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          levelInfo.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      levelInfo.description,
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '$totalMinutes min gefocust',
+                      style: TextStyle(
+                        color: themeColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Progress bar to next level
+          const SizedBox(height: 20),
+          if (nextLevel != null) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Volgende: ${nextLevel.emoji} ${nextLevel.name}',
+                  style: const TextStyle(
+                    color: Colors.white60,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  '${nextLevel.minMinutes - totalMinutes} min te gaan',
+                  style: TextStyle(
+                    color: themeColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Stack(
+                children: [
+                  // Background track
+                  Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  // Progress fill
+                  FractionallySizedBox(
+                    widthFactor: progress.clamp(0.0, 1.0),
+                    child: Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [themeColor, themeColor.withValues(alpha: 0.6)],
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: themeColor.withValues(alpha: 0.4),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            // Max level reached
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFFFD700).withValues(alpha: 0.3),
+                ),
+              ),
+              child: const Center(
+                child: Text(
+                  '✨ Maximaal level bereikt — Legendarisch!',
+                  style: TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 

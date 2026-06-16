@@ -4,6 +4,8 @@ import '../state/pomodoro_state.dart';
 import '../widgets/checklist_widget.dart';
 import '../widgets/settings_sheet.dart';
 import '../widgets/timer_painter.dart';
+import '../widgets/avatar_widget.dart';
+import '../models/avatar_level.dart';
 
 class TimerScreen extends StatefulWidget {
   final PomodoroState state;
@@ -25,10 +27,29 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
       duration: const Duration(milliseconds: 300),
     );
     _fadeController.forward();
+    widget.state.addListener(_checkForLevelUp);
+  }
+
+  void _checkForLevelUp() {
+    if (widget.state.justLeveledUp) {
+      widget.state.clearLevelUpFlag();
+      final info = widget.state.avatarLevelInfo;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            content: _LevelUpBanner(info: info),
+          ),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
+    widget.state.removeListener(_checkForLevelUp);
     _fadeController.dispose();
     super.dispose();
   }
@@ -160,17 +181,57 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
                 children: [
                   const SizedBox(height: 16),
 
+                  // Avatar Widget
+                  Center(
+                    child: AvatarWidget(
+                      level: widget.state.avatarLevelInfo.level,
+                      isTimerRunning:
+                          widget.state.timerStatus == TimerStatus.running,
+                      size: 108,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Avatar name + level badge
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: themeColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: themeColor.withValues(alpha: 0.2), width: 1),
+                      ),
+                      child: Text(
+                        '${widget.state.avatarLevelInfo.emoji}  ${widget.state.avatarLevelInfo.name}',
+                        style: TextStyle(
+                          color: themeColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
                   // Status Badge and description
                   FadeTransition(
                     opacity: _fadeController,
                     child: Column(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
                             color: themeColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(30),
-                            border: Border.all(color: themeColor.withValues(alpha: 0.3), width: 1),
+                            border: Border.all(
+                                color: themeColor.withValues(alpha: 0.3),
+                                width: 1),
                           ),
                           child: Text(
                             widget.state.getModeName().toUpperCase(),
@@ -182,12 +243,12 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         Text(
                           widget.state.getModeDescription(),
                           style: const TextStyle(
                             color: Colors.white70,
-                            fontSize: 15,
+                            fontSize: 14,
                             fontWeight: FontWeight.w300,
                           ),
                           textAlign: TextAlign.center,
@@ -378,6 +439,75 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
         icon: Icon(icon, color: Colors.white70),
         onPressed: onPressed,
         tooltip: tooltip,
+      ),
+    );
+  }
+}
+
+/// Level-up banner shown in a SnackBar when avatar grows.
+class _LevelUpBanner extends StatelessWidget {
+  final AvatarLevelInfo info;
+
+  const _LevelUpBanner({required this.info});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E1E3A), Color(0xFF2A1A3A)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.5), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withValues(alpha: 0.15),
+            blurRadius: 20,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Text(info.emoji, style: const TextStyle(fontSize: 32)),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Level Up! 🎉',
+                  style: TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 13,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Je plant is een ${info.name}!',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                Text(
+                  info.description,
+                  style: const TextStyle(
+                    color: Colors.white60,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
