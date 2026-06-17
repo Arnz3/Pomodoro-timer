@@ -7,6 +7,7 @@ class ChecklistWidget extends StatefulWidget {
   final Function(String id) onToggleTask;
   final Function(String id) onDeleteTask;
   final Color themeColor;
+  final bool embedded; // when true, list will shrinkWrap and disable its own scrolling
 
   const ChecklistWidget({
     super.key,
@@ -15,6 +16,7 @@ class ChecklistWidget extends StatefulWidget {
     required this.onToggleTask,
     required this.onDeleteTask,
     required this.themeColor,
+    this.embedded = false,
   });
 
   @override
@@ -128,63 +130,81 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
           const SizedBox(height: 16),
           
           // Tasks scrollable list
-          Expanded(
-            child: widget.tasks.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Geen taken toegevoegd. Voeg er een toe om gefocust te blijven!',
-                      style: TextStyle(color: Colors.white30, fontSize: 13),
-                      textAlign: TextAlign.center,
+          if (!widget.embedded)
+            Expanded(
+              child: widget.tasks.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Geen taken toegevoegd. Voeg er een toe om gefocust te blijven!',
+                        style: TextStyle(color: Colors.white30, fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.only(bottom: 24),
+                      itemCount: widget.tasks.length,
+                      itemBuilder: (context, index) => _buildTaskItem(widget.tasks[index]),
+                    ),
+            )
+          else
+            // when embedded, let parent scroll view handle scrolling
+            widget.tasks.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.only(bottom: 24),
+                    child: Center(
+                      child: Text(
+                        'Geen taken toegevoegd. Voeg er een toe om gefocust te blijven!',
+                        style: TextStyle(color: Colors.white30, fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   )
                 : ListView.builder(
-                    controller: _scrollController,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     padding: const EdgeInsets.only(bottom: 24),
                     itemCount: widget.tasks.length,
-                    itemBuilder: (context, index) {
-                      final task = widget.tasks[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.02),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: task.isCompleted
-                                ? Colors.white10
-                                : widget.themeColor.withValues(alpha: 0.1),
-                          ),
-                        ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                          leading: Checkbox(
-                            value: task.isCompleted,
-                            activeColor: widget.themeColor,
-                            checkColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            onChanged: (_) => widget.onToggleTask(task.id),
-                          ),
-                          title: Text(
-                            task.title,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: task.isCompleted ? Colors.white38 : Colors.white,
-                              decoration: task.isCompleted
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.white38),
-                            onPressed: () => widget.onDeleteTask(task.id),
-                          ),
-                        ),
-                      );
-                    },
+                    itemBuilder: (context, index) => _buildTaskItem(widget.tasks[index]),
                   ),
-          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTaskItem(Task task) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.02),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: task.isCompleted ? Colors.white10 : widget.themeColor.withValues(alpha: 0.1),
+        ),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+        leading: Checkbox(
+          value: task.isCompleted,
+          activeColor: widget.themeColor,
+          checkColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+          onChanged: (_) => widget.onToggleTask(task.id),
+        ),
+        title: Text(
+          task.title,
+          style: TextStyle(
+            fontSize: 14,
+            color: task.isCompleted ? Colors.white38 : Colors.white,
+            decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+          ),
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete_outline, size: 20, color: Colors.white38),
+          onPressed: () => widget.onDeleteTask(task.id),
+        ),
       ),
     );
   }

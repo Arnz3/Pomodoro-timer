@@ -176,245 +176,263 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 16),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final double avatarSize = (constraints.maxWidth * 0.26).clamp(60.0, 108.0).toDouble();
+                  final double ringSize = (constraints.maxWidth * 0.56).clamp(160.0, 240.0).toDouble();
 
-                  // Avatar Widget
-                  Center(
-                    child: AvatarWidget(
-                      level: widget.state.avatarLevelInfo.level,
-                      isTimerRunning:
-                          widget.state.timerStatus == TimerStatus.running,
-                      size: 108,
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Avatar name + level badge
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: themeColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: themeColor.withValues(alpha: 0.2), width: 1),
-                      ),
-                      child: Text(
-                        '${widget.state.avatarLevelInfo.emoji}  ${widget.state.avatarLevelInfo.name}',
-                        style: TextStyle(
-                          color: themeColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Status Badge and description
-                  FadeTransition(
-                    opacity: _fadeController,
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: themeColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(
-                                color: themeColor.withValues(alpha: 0.3),
-                                width: 1),
-                          ),
-                          child: Text(
-                            widget.state.getModeName().toUpperCase(),
-                            style: TextStyle(
-                              color: themeColor,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 13,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          widget.state.getModeDescription(),
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w300,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 36),
-
-                  // Timer Progress Ring & Counter
-                  Center(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Outer Ring
-                        SizedBox(
-                          width: 240,
-                          height: 240,
-                          child: CustomPaint(
-                            painter: TimerPainter(
-                              progress: progress,
-                              color: themeColor,
-                            ),
-                          ),
-                        ),
-                        // Inner Digital Time
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _formatTime(widget.state.secondsRemaining),
-                              style: const TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 2.0,
-                                fontFeatures: [FontFeature.tabularFigures()],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              widget.state.timerStatus == TimerStatus.running
-                                  ? 'BEZIG'
-                                  : widget.state.timerStatus == TimerStatus.paused
-                                      ? 'GEPAUZEERD'
-                                      : 'START KLAAR',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                letterSpacing: 2,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white38,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  // Action Buttons Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Reset button
-                      _buildControlCircleButton(
-                        icon: Icons.replay,
-                        onPressed: widget.state.resetTimer,
-                        tooltip: 'Herstarten',
-                      ),
-                      const SizedBox(width: 24),
-                      // Play/Pause button
-                      GestureDetector(
-                        onTap: () {
-                          if (widget.state.timerStatus == TimerStatus.running) {
-                            widget.state.pauseTimer();
-                          } else {
-                            widget.state.startTimer(_onTimerFinishedAlert);
-                          }
-                        },
-                        child: Container(
-                          width: 76,
-                          height: 76,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: themeColor,
-                            boxShadow: [
-                              BoxShadow(
-                                color: themeColor.withValues(alpha: 0.4),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
+                      const SizedBox(height: 16),
+
+                      // Make the top portion scrollable if vertical space is tight
+                      Flexible(
+                        flex: 65,
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Avatar Widget
+                              Center(
+                                child: AvatarWidget(
+                                  level: widget.state.avatarLevelInfo.level,
+                                  isTimerRunning:
+                                      widget.state.timerStatus == TimerStatus.running,
+                                  size: avatarSize,
+                                ),
+                              ),
+
+                              const SizedBox(height: 8),
+
+                              // Avatar name + level badge
+                              Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: themeColor.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color: themeColor.withValues(alpha: 0.2), width: 1),
+                                  ),
+                                  child: Text(
+                                    '${widget.state.avatarLevelInfo.emoji}  ${widget.state.avatarLevelInfo.name}',
+                                    style: TextStyle(
+                                      color: themeColor,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              // Status Badge and description
+                              FadeTransition(
+                                opacity: _fadeController,
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: themeColor.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(30),
+                                        border: Border.all(
+                                            color: themeColor.withValues(alpha: 0.3),
+                                            width: 1),
+                                      ),
+                                      child: Text(
+                                        widget.state.getModeName().toUpperCase(),
+                                        style: TextStyle(
+                                          color: themeColor,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 13,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      widget.state.getModeDescription(),
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w300,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 36),
+
+                              // Timer Progress Ring & Counter
+                              Center(
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    // Outer Ring
+                                    SizedBox(
+                                      width: ringSize,
+                                      height: ringSize,
+                                      child: CustomPaint(
+                                        painter: TimerPainter(
+                                          progress: progress,
+                                          color: themeColor,
+                                        ),
+                                      ),
+                                    ),
+                                    // Inner Digital Time
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          _formatTime(widget.state.secondsRemaining),
+                                          style: const TextStyle(
+                                            fontSize: 48,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 2.0,
+                                            fontFeatures: [FontFeature.tabularFigures()],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          widget.state.timerStatus == TimerStatus.running
+                                              ? 'BEZIG'
+                                              : widget.state.timerStatus == TimerStatus.paused
+                                                  ? 'GEPAUZEERD'
+                                                  : 'START KLAAR',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            letterSpacing: 2,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.white38,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 40),
+
+                              // Action Buttons Row
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Reset button
+                                  _buildControlCircleButton(
+                                    icon: Icons.replay,
+                                    onPressed: widget.state.resetTimer,
+                                    tooltip: 'Herstarten',
+                                  ),
+                                  const SizedBox(width: 24),
+                                  // Play/Pause button
+                                  GestureDetector(
+                                    onTap: () {
+                                      if (widget.state.timerStatus == TimerStatus.running) {
+                                        widget.state.pauseTimer();
+                                      } else {
+                                        widget.state.startTimer(_onTimerFinishedAlert);
+                                      }
+                                    },
+                                    child: Container(
+                                      width: 76,
+                                      height: 76,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: themeColor,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: themeColor.withValues(alpha: 0.4),
+                                            blurRadius: 16,
+                                            offset: const Offset(0, 6),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(
+                                        widget.state.timerStatus == TimerStatus.running
+                                            ? Icons.pause
+                                            : Icons.play_arrow,
+                                        size: 38,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 24),
+                                  // Skip button
+                                  _buildControlCircleButton(
+                                    icon: Icons.skip_next,
+                                    onPressed: () {
+                                      _fadeController.reverse().then((_) {
+                                        widget.state.skipMode(() {
+                                          _fadeController.forward();
+                                        });
+                                      });
+                                    },
+                                    tooltip: 'Sla over',
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 36),
+
+                              // Session Indicator dots
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List.generate(
+                                  widget.state.sessionsBeforeLongBreak,
+                                  (index) {
+                                    final completedInCycle =
+                                        widget.state.completedSessions % widget.state.sessionsBeforeLongBreak;
+                                    final isDone = index < completedInCycle;
+                                    final isCurrent = index == completedInCycle &&
+                                        widget.state.currentMode == TimerMode.focus;
+                                    return Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                                      width: 12,
+                                      height: 12,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: isDone
+                                            ? themeColor
+                                            : isCurrent
+                                                ? themeColor.withValues(alpha: 0.5)
+                                                : Colors.white10,
+                                        border: isCurrent
+                                            ? Border.all(color: themeColor, width: 1.5)
+                                            : null,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+
+                              const SizedBox(height: 32),
+
+                              // Checklist Section: embedded so it scrolls with the rest of the screen
+                              ChecklistWidget(
+                                tasks: widget.state.tasks,
+                                onAddTask: widget.state.addTask,
+                                onToggleTask: widget.state.toggleTask,
+                                onDeleteTask: widget.state.deleteTask,
+                                themeColor: themeColor,
+                                embedded: true,
                               ),
                             ],
                           ),
-                          child: Icon(
-                            widget.state.timerStatus == TimerStatus.running
-                                ? Icons.pause
-                                : Icons.play_arrow,
-                            size: 38,
-                            color: Colors.white,
-                          ),
                         ),
                       ),
-                      const SizedBox(width: 24),
-                      // Skip button
-                      _buildControlCircleButton(
-                        icon: Icons.skip_next,
-                        onPressed: () {
-                          _fadeController.reverse().then((_) {
-                            widget.state.skipMode(() {
-                              _fadeController.forward();
-                            });
-                          });
-                        },
-                        tooltip: 'Sla over',
-                      ),
                     ],
-                  ),
-
-                  const SizedBox(height: 36),
-
-                  // Session Indicator dots
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      widget.state.sessionsBeforeLongBreak,
-                      (index) {
-                        final completedInCycle =
-                            widget.state.completedSessions % widget.state.sessionsBeforeLongBreak;
-                        final isDone = index < completedInCycle;
-                        final isCurrent = index == completedInCycle &&
-                            widget.state.currentMode == TimerMode.focus;
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 6),
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isDone
-                                ? themeColor
-                                : isCurrent
-                                    ? themeColor.withValues(alpha: 0.5)
-                                    : Colors.white10,
-                            border: isCurrent
-                                ? Border.all(color: themeColor, width: 1.5)
-                                : null,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Checklist Section
-                  Expanded(
-                    child: ChecklistWidget(
-                      tasks: widget.state.tasks,
-                      onAddTask: widget.state.addTask,
-                      onToggleTask: widget.state.toggleTask,
-                      onDeleteTask: widget.state.deleteTask,
-                      themeColor: themeColor,
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ),

@@ -179,12 +179,16 @@ class StatsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Wekelijkse Focus Activiteit',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                            Expanded(
+                              child: Text(
+                                'Wekelijkse Focus Activiteit',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             Text(
                               'Minuten / Dag',
                               style: TextStyle(fontSize: 12, color: themeColor, fontWeight: FontWeight.w500),
@@ -510,9 +514,17 @@ class StatsScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                  maxLines: 2,
+                  overflow: TextOverflow.visible,
+                ),
+              ),
+              const SizedBox(width: 8),
               Icon(icon, color: iconColor, size: 20),
             ],
           ),
