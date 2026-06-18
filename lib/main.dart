@@ -71,6 +71,44 @@ class _RootNavigationPageState extends State<RootNavigationPage> {
     return ListenableBuilder(
       listenable: _state,
       builder: (context, _) {
+        if (!_state.isLoaded) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF0F0F1A),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.timer_outlined,
+                    size: 64,
+                    color: Color(0xFFFF5E62),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'FocusTime',
+                    style: TextStyle(
+                      fontFamily: 'Roboto',
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  SizedBox(height: 24),
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF5E62)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         final themeColor = _state.getThemeColor();
         return Scaffold(
           body: IndexedStack(

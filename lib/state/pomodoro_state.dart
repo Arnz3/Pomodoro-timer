@@ -1,11 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/task.dart';
 import '../models/timer_enums.dart';
 import '../models/avatar_level.dart';
 
 class PomodoroState extends ChangeNotifier {
+  final _storage = const FlutterSecureStorage();
+  bool _isLoaded = false;
+  bool get isLoaded => _isLoaded;
+
   // Durations in minutes
   int _workMinutes = 25;
   int _shortBreakMinutes = 5;
@@ -59,12 +65,92 @@ class PomodoroState extends ChangeNotifier {
 
   PomodoroState() {
     _resetToMode(_currentMode);
-    
-    // Seed some initial tasks for demonstration
-    _tasks.addAll([
-      Task(id: '1', title: 'Start met focussen 🎯'),
-      Task(id: '2', title: 'Water drinken 💧', isCompleted: true),
-    ]);
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      // Load settings
+      final settingsStr = await _storage.read(key: 'pomodoro_settings');
+      if (settingsStr != null) {
+        final Map<String, dynamic> settings = jsonDecode(settingsStr);
+        _workMinutes = settings['workMinutes'] as int? ?? 25;
+        _shortBreakMinutes = settings['shortBreakMinutes'] as int? ?? 5;
+        _longBreakMinutes = settings['longBreakMinutes'] as int? ?? 15;
+      }
+
+      // Load stats
+      final statsStr = await _storage.read(key: 'pomodoro_stats');
+      if (statsStr != null) {
+        final Map<String, dynamic> stats = jsonDecode(statsStr);
+        _totalFocusSeconds = stats['totalFocusSeconds'] as int? ?? 0;
+        _completedSessions = stats['completedSessions'] as int? ?? 0;
+      }
+      _previousAvatarLevel = getAvatarLevelInfo(_totalFocusSeconds ~/ 60).level;
+
+      // Load tasks
+      final tasksStr = await _storage.read(key: 'pomodoro_tasks');
+      if (tasksStr != null) {
+        final List<dynamic> decoded = jsonDecode(tasksStr);
+        _tasks.clear();
+        _tasks.addAll(decoded.map((t) => Task.fromJson(t as Map<String, dynamic>)));
+      } else {
+        // Seeding baseline tasks if no tasks are saved (first run)
+        _tasks.clear();
+        _tasks.addAll([
+          Task(id: '1', title: 'Start met focussen 🎯'),
+          Task(id: '2', title: 'Water drinken 💧', isCompleted: true),
+        ]);
+      }
+
+      // Re-apply values based on loaded settings
+      _resetToMode(_currentMode);
+    } catch (e) {
+      debugPrint('Error loading saved pomodoro data: $e');
+      if (_tasks.isEmpty) {
+        _tasks.addAll([
+          Task(id: '1', title: 'Start met focussen 🎯'),
+          Task(id: '2', title: 'Water drinken 💧', isCompleted: true),
+        ]);
+      }
+    } finally {
+      _isLoaded = true;
+      notifyListeners();
+    }
+  }
+
+  Future<void> saveTasks() async {
+    try {
+      final tasksJson = jsonEncode(_tasks.map((t) => t.toJson()).toList());
+      await _storage.write(key: 'pomodoro_tasks', value: tasksJson);
+    } catch (e) {
+      debugPrint('Error saving tasks: $e');
+    }
+  }
+
+  Future<void> saveStats() async {
+    try {
+      final statsJson = jsonEncode({
+        'totalFocusSeconds': _totalFocusSeconds,
+        'completedSessions': _completedSessions,
+      });
+      await _storage.write(key: 'pomodoro_stats', value: statsJson);
+    } catch (e) {
+      debugPrint('Error saving stats: $e');
+    }
+  }
+
+  Future<void> saveSettings() async {
+    try {
+      final settingsJson = jsonEncode({
+        'workMinutes': _workMinutes,
+        'shortBreakMinutes': _shortBreakMinutes,
+        'longBreakMinutes': _longBreakMinutes,
+      });
+      await _storage.write(key: 'pomodoro_settings', value: settingsJson);
+    } catch (e) {
+      debugPrint('Error saving settings: $e');
+    }
   }
 
   @override
@@ -144,6 +230,10 @@ class PomodoroState extends ChangeNotifier {
             _justLeveledUp = true;
             _previousAvatarLevel = newLevel;
           }
+          // Save stats periodically (every 10 seconds of focus time)
+          if (_totalFocusSeconds % 10 == 0) {
+            saveStats();
+          }
         }
         notifyListeners();
       } else {
@@ -160,7 +250,7 @@ class PomodoroState extends ChangeNotifier {
     _timer?.cancel();
     _timerStatus = TimerStatus.paused;
     notifyListeners();
-
+    saveStats(); // Save stats on pause
     HapticFeedback.lightImpact();
   }
 
@@ -174,6 +264,7 @@ class PomodoroState extends ChangeNotifier {
     _timer?.cancel();
     _transitionToNextMode();
     onTransitioned();
+    saveStats(); // Save stats on skip
     HapticFeedback.mediumImpact();
   }
 
@@ -186,6 +277,7 @@ class PomodoroState extends ChangeNotifier {
       _completedSessions++;
     }
 
+    saveStats(); // Save stats when timer completes
     onFinished();
     _transitionToNextMode();
   }
@@ -213,6 +305,7 @@ class PomodoroState extends ChangeNotifier {
       title: title.trim(),
     ));
     notifyListeners();
+    saveTasks(); // Save tasks when added
     HapticFeedback.lightImpact();
   }
 
@@ -221,6 +314,7 @@ class PomodoroState extends ChangeNotifier {
     if (index != -1) {
       _tasks[index].isCompleted = !_tasks[index].isCompleted;
       notifyListeners();
+      saveTasks(); // Save tasks when toggled
       HapticFeedback.lightImpact();
     }
   }
@@ -228,6 +322,7 @@ class PomodoroState extends ChangeNotifier {
   void deleteTask(String id) {
     _tasks.removeWhere((t) => t.id == id);
     notifyListeners();
+    saveTasks(); // Save tasks when deleted
     HapticFeedback.mediumImpact();
   }
 
@@ -237,6 +332,7 @@ class PomodoroState extends ChangeNotifier {
     _shortBreakMinutes = short;
     _longBreakMinutes = long;
     _resetToMode(_currentMode);
+    saveSettings(); // Save settings when changed
     HapticFeedback.mediumImpact();
   }
 }
