@@ -7,39 +7,54 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
   });
 
-  test('PomodoroState loads default seed tasks on first initialization', () async {
-    final state = PomodoroState();
-    
-    // Wait for the async loading to complete
-    await Future.delayed(Duration.zero);
-    
-    expect(state.isLoaded, true);
-    expect(state.tasks.length, 2);
-    expect(state.tasks[0].title, 'Start met focussen 🎯');
-    expect(state.tasks[1].title, 'Water drinken 💧');
-  });
+  test(
+    'PomodoroState loads default seed tasks on first initialization',
+    () async {
+      final state = PomodoroState();
+
+      // Wait for the async loading to complete
+      await Future.delayed(Duration.zero);
+
+      expect(state.isLoaded, true);
+      expect(state.tasks.length, 2);
+      expect(state.tasks[0].title, 'Start met focussen 🎯');
+      expect(state.tasks[1].title, 'Water drinken 💧');
+    },
+  );
 
   test('PomodoroState persists settings, tasks, and stats', () async {
     // 1. Setup mock storage with custom state
     FlutterSecureStorage.setMockInitialValues({
-      'pomodoro_settings': '{"workMinutes":20,"shortBreakMinutes":4,"longBreakMinutes":10}',
-      'pomodoro_stats': '{"totalFocusSeconds":120,"completedSessions":3}',
-      'pomodoro_tasks': '[{"id":"t1","title":"Mijn test taak","isCompleted":false}]',
+      'pomodoro_settings':
+          '{"workMinutes":20,"shortBreakMinutes":4,"longBreakMinutes":10}',
+      'pomodoro_stats':
+          '{"totalFocusSeconds":120,"completedSessions":3,"dailyFocusSeconds":{"2026-08-17":60,"2026-08-23":60}}',
+      'pomodoro_tasks':
+          '[{"id":"t1","title":"Mijn test taak","isCompleted":false}]',
     });
 
     final state = PomodoroState();
-    
+
     // Wait for the async loading logic to complete
     await Future.delayed(Duration.zero);
-    
+
     expect(state.isLoaded, true);
     expect(state.workMinutes, 20);
     expect(state.shortBreakMinutes, 4);
     expect(state.longBreakMinutes, 10);
-    
+
     expect(state.totalFocusSeconds, 120);
     expect(state.completedSessions, 3);
-    
+    expect(state.dailyFocusSeconds['2026-08-17'], 60);
+    expect(state.dailyFocusSeconds['2026-08-23'], 60);
+
+    await state.saveStats();
+    final savedStats = await const FlutterSecureStorage().read(
+      key: 'pomodoro_stats',
+    );
+    expect(savedStats, contains('dailyFocusSeconds'));
+    expect(savedStats, contains('2026-08-17'));
+
     expect(state.tasks.length, 1);
     expect(state.tasks[0].id, 't1');
     expect(state.tasks[0].title, 'Mijn test taak');

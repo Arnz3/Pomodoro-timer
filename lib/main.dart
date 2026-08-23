@@ -6,9 +6,7 @@ import 'state/pomodoro_state.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   runApp(const MyApp());
 }
 
@@ -63,10 +61,7 @@ class _RootNavigationPageState extends State<RootNavigationPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screens = [
-      TimerScreen(state: _state),
-      StatsScreen(state: _state),
-    ];
+    final screens = [TimerScreen(state: _state), StatsScreen(state: _state)];
 
     return ListenableBuilder(
       listenable: _state,
@@ -100,7 +95,9 @@ class _RootNavigationPageState extends State<RootNavigationPage> {
                     height: 36,
                     child: CircularProgressIndicator(
                       strokeWidth: 3,
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF5E62)),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFFFF5E62),
+                      ),
                     ),
                   ),
                 ],
@@ -111,10 +108,7 @@ class _RootNavigationPageState extends State<RootNavigationPage> {
 
         final themeColor = _state.getThemeColor();
         return Scaffold(
-          body: IndexedStack(
-            index: _currentIndex,
-            children: screens,
-          ),
+          body: IndexedStack(index: _currentIndex, children: screens),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _currentIndex,
             onTap: (index) {

@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/task.dart';
 import '../models/timer_enums.dart';
 import '../models/avatar_level.dart';
+import '../models/focus_subject.dart';
 
 class PomodoroState extends ChangeNotifier {
   final _storage = const FlutterSecureStorage();
@@ -36,11 +37,27 @@ class PomodoroState extends ChangeNotifier {
   // Statistics
   int _totalFocusSeconds = 0;
   int _completedSessions = 0;
+  final Map<String, int> _dailyFocusSeconds = {};
   final int _sessionsBeforeLongBreak = 4;
 
   int get totalFocusSeconds => _totalFocusSeconds;
   int get completedSessions => _completedSessions;
   int get sessionsBeforeLongBreak => _sessionsBeforeLongBreak;
+
+  Map<String, int> get dailyFocusSeconds =>
+      Map.unmodifiable(_dailyFocusSeconds);
+
+  final List<FocusSubject> _focusSubjects = [];
+  String? _selectedFocusSubjectId;
+
+  List<FocusSubject> get focusSubjects => List.unmodifiable(_focusSubjects);
+  String? get selectedFocusSubjectId => _selectedFocusSubjectId;
+  FocusSubject? get selectedFocusSubject {
+    for (final subject in _focusSubjects) {
+      if (subject.id == _selectedFocusSubjectId) return subject;
+    }
+    return null;
+  }
 
   // Avatar / Gamification
   AvatarLevel _previousAvatarLevel = AvatarLevel.seed;
@@ -85,6 +102,17 @@ class PomodoroState extends ChangeNotifier {
         final Map<String, dynamic> stats = jsonDecode(statsStr);
         _totalFocusSeconds = stats['totalFocusSeconds'] as int? ?? 0;
         _completedSessions = stats['completedSessions'] as int? ?? 0;
+        final dailyStats = stats['dailyFocusSeconds'];
+        if (dailyStats is Map) {
+          _dailyFocusSeconds
+            ..clear()
+            ..addAll(
+              dailyStats.map(
+                (key, value) =>
+                    MapEntry(key.toString(), (value as num).toInt()),
+              ),
+            );
+        }
       }
       _previousAvatarLevel = getAvatarLevelInfo(_totalFocusSeconds ~/ 60).level;
 
@@ -93,7 +121,9 @@ class PomodoroState extends ChangeNotifier {
       if (tasksStr != null) {
         final List<dynamic> decoded = jsonDecode(tasksStr);
         _tasks.clear();
-        _tasks.addAll(decoded.map((t) => Task.fromJson(t as Map<String, dynamic>)));
+        _tasks.addAll(
+          decoded.map((t) => Task.fromJson(t as Map<String, dynamic>)),
+        );
       } else {
         // Seeding baseline tasks if no tasks are saved (first run)
         _tasks.clear();
@@ -101,6 +131,42 @@ class PomodoroState extends ChangeNotifier {
           Task(id: '1', title: 'Start met focussen 🎯'),
           Task(id: '2', title: 'Water drinken 💧', isCompleted: true),
         ]);
+      }
+
+      final subjectsStr = await _storage.read(key: 'pomodoro_focus_subjects');
+      if (subjectsStr != null) {
+        final decoded = jsonDecode(subjectsStr) as Map<String, dynamic>;
+        _focusSubjects
+          ..clear()
+          ..addAll(
+            (decoded['subjects'] as List<dynamic>).map(
+              (subject) =>
+                  FocusSubject.fromJson(subject as Map<String, dynamic>),
+            ),
+          );
+        _selectedFocusSubjectId = decoded['selectedId'] as String?;
+      } else {
+        _focusSubjects.addAll([
+          FocusSubject(
+            id: 'school',
+            name: 'School',
+            color: const Color(0xFF4D9DE0),
+          ),
+          FocusSubject(
+            id: 'work',
+            name: 'Werk',
+            color: const Color(0xFFFF7A59),
+          ),
+          FocusSubject(
+            id: 'personal',
+            name: 'Persoonlijk',
+            color: const Color(0xFF45C486),
+          ),
+        ]);
+        _selectedFocusSubjectId = _focusSubjects.first.id;
+      }
+      if (selectedFocusSubject == null && _focusSubjects.isNotEmpty) {
+        _selectedFocusSubjectId = _focusSubjects.first.id;
       }
 
       // Re-apply values based on loaded settings
@@ -133,6 +199,7 @@ class PomodoroState extends ChangeNotifier {
       final statsJson = jsonEncode({
         'totalFocusSeconds': _totalFocusSeconds,
         'completedSessions': _completedSessions,
+        'dailyFocusSeconds': _dailyFocusSeconds,
       });
       await _storage.write(key: 'pomodoro_stats', value: statsJson);
     } catch (e) {
@@ -153,6 +220,22 @@ class PomodoroState extends ChangeNotifier {
     }
   }
 
+  Future<void> saveFocusSubjects() async {
+    try {
+      await _storage.write(
+        key: 'pomodoro_focus_subjects',
+        value: jsonEncode({
+          'selectedId': _selectedFocusSubjectId,
+          'subjects': _focusSubjects
+              .map((subject) => subject.toJson())
+              .toList(),
+        }),
+      );
+    } catch (e) {
+      debugPrint('Error saving focus subjects: $e');
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -162,12 +245,46 @@ class PomodoroState extends ChangeNotifier {
   Color getThemeColor() {
     switch (_currentMode) {
       case TimerMode.focus:
-        return const Color(0xFFFF5E62); // Warm coral red
+        return selectedFocusSubject?.color ?? const Color(0xFFFF5E62);
       case TimerMode.shortBreak:
         return const Color(0xFF00D2C4); // Mint green
       case TimerMode.longBreak:
         return const Color(0xFF3B82F6); // Ocean blue
     }
+  }
+
+  void selectFocusSubject(String id) {
+    if (_focusSubjects.every((subject) => subject.id != id)) return;
+    _selectedFocusSubjectId = id;
+    notifyListeners();
+    saveFocusSubjects();
+    HapticFeedback.lightImpact();
+  }
+
+  void addFocusSubject(String name, Color color) {
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) return;
+    final subject = FocusSubject(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      name: trimmedName,
+      color: color,
+    );
+    _focusSubjects.add(subject);
+    _selectedFocusSubjectId = subject.id;
+    notifyListeners();
+    saveFocusSubjects();
+    HapticFeedback.lightImpact();
+  }
+
+  void deleteFocusSubject(String id) {
+    if (_focusSubjects.length <= 1) return;
+    _focusSubjects.removeWhere((subject) => subject.id == id);
+    if (_selectedFocusSubjectId == id) {
+      _selectedFocusSubjectId = _focusSubjects.first.id;
+    }
+    notifyListeners();
+    saveFocusSubjects();
+    HapticFeedback.mediumImpact();
   }
 
   String getModeName() {
@@ -224,6 +341,8 @@ class PomodoroState extends ChangeNotifier {
         _secondsRemaining--;
         if (_currentMode == TimerMode.focus) {
           _totalFocusSeconds++;
+          final today = _dateKey(DateTime.now());
+          _dailyFocusSeconds[today] = (_dailyFocusSeconds[today] ?? 0) + 1;
           // Check for level-up
           final newLevel = getAvatarLevelInfo(_totalFocusSeconds ~/ 60).level;
           if (newLevel != _previousAvatarLevel) {
@@ -243,6 +362,11 @@ class PomodoroState extends ChangeNotifier {
 
     HapticFeedback.lightImpact();
   }
+
+  String _dateKey(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 
   void pauseTimer() {
     if (_timerStatus != TimerStatus.running) return;
@@ -285,7 +409,8 @@ class PomodoroState extends ChangeNotifier {
   void _transitionToNextMode() {
     TimerMode nextMode;
     if (_currentMode == TimerMode.focus) {
-      if (_completedSessions > 0 && _completedSessions % _sessionsBeforeLongBreak == 0) {
+      if (_completedSessions > 0 &&
+          _completedSessions % _sessionsBeforeLongBreak == 0) {
         nextMode = TimerMode.longBreak;
       } else {
         nextMode = TimerMode.shortBreak;
@@ -300,10 +425,12 @@ class PomodoroState extends ChangeNotifier {
   // Task methods
   void addTask(String title) {
     if (title.trim().isEmpty) return;
-    _tasks.add(Task(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title.trim(),
-    ));
+    _tasks.add(
+      Task(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: title.trim(),
+      ),
+    );
     notifyListeners();
     saveTasks(); // Save tasks when added
     HapticFeedback.lightImpact();

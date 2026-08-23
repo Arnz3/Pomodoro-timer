@@ -10,7 +10,7 @@ class StatsScreen extends StatelessWidget {
 
   String _formatDuration(int totalSeconds) {
     if (totalSeconds == 0) return '0m 0s';
-    
+
     int hours = totalSeconds ~/ 3600;
     int minutes = (totalSeconds % 3600) ~/ 60;
     int seconds = totalSeconds % 60;
@@ -30,19 +30,34 @@ class StatsScreen extends StatelessWidget {
         final themeColor = state.getThemeColor();
         final totalTasks = state.tasks.length;
         final completedTasks = state.tasks.where((t) => t.isCompleted).length;
-        final completionRate = totalTasks > 0 ? completedTasks / totalTasks : 0.0;
+        final completionRate = totalTasks > 0
+            ? completedTasks / totalTasks
+            : 0.0;
 
-        // Seeding baseline weekly focus data (in minutes) for illustration
-        // Monday (1) to Sunday (7). Replace today's value with actual focus time.
         final todayWeekday = DateTime.now().weekday; // 1 = Monday, 7 = Sunday
-        final List<String> weekdays = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
-        final List<double> baseWeeklyMinutes = [40.0, 65.0, 25.0, 50.0, 35.0, 15.0, 0.0];
-        
-        // Update today's value with active session focus
-        baseWeeklyMinutes[todayWeekday - 1] = state.totalFocusSeconds / 60.0;
+        final List<String> weekdays = [
+          'Ma',
+          'Di',
+          'Wo',
+          'Do',
+          'Vr',
+          'Za',
+          'Zo',
+        ];
+        final weekStart = DateTime.now().subtract(
+          Duration(days: todayWeekday - 1),
+        );
+        final weeklyMinutes = List<double>.generate(7, (index) {
+          final date = weekStart.add(Duration(days: index));
+          final dateKey =
+              '${date.year.toString().padLeft(4, '0')}-'
+              '${date.month.toString().padLeft(2, '0')}-'
+              '${date.day.toString().padLeft(2, '0')}';
+          return (state.dailyFocusSeconds[dateKey] ?? 0) / 60.0;
+        });
 
         // Find max value to scale chart bars nicely
-        double maxMinutes = baseWeeklyMinutes.reduce((a, b) => a > b ? a : b);
+        double maxMinutes = weeklyMinutes.reduce((a, b) => a > b ? a : b);
         if (maxMinutes < 60) maxMinutes = 60; // Keep scale reasonable
 
         return Scaffold(
@@ -55,7 +70,11 @@ class StatsScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 const Text(
                   'Mijn Voortgang',
-                  style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5, fontSize: 20),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                    fontSize: 20,
+                  ),
                 ),
               ],
             ),
@@ -96,7 +115,10 @@ class StatsScreen extends StatelessWidget {
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: themeColor.withValues(alpha: 0.2), width: 1.5),
+                      border: Border.all(
+                        color: themeColor.withValues(alpha: 0.2),
+                        width: 1.5,
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -106,7 +128,11 @@ class StatsScreen extends StatelessWidget {
                             color: themeColor.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(Icons.local_fire_department, color: themeColor, size: 36),
+                          child: Icon(
+                            Icons.local_fire_department,
+                            color: themeColor,
+                            size: 36,
+                          ),
                         ),
                         const SizedBox(width: 20),
                         Expanded(
@@ -115,7 +141,11 @@ class StatsScreen extends StatelessWidget {
                             children: [
                               const Text(
                                 'Totaal Gefocust',
-                                style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500),
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                               const SizedBox(height: 6),
                               Text(
@@ -173,7 +203,9 @@ class StatsScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFF161623),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.05),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -183,7 +215,11 @@ class StatsScreen extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 'Wekelijkse Focus Activiteit',
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -191,7 +227,11 @@ class StatsScreen extends StatelessWidget {
                             const SizedBox(width: 8),
                             Text(
                               'Minuten / Dag',
-                              style: TextStyle(fontSize: 12, color: themeColor, fontWeight: FontWeight.w500),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: themeColor,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
@@ -203,10 +243,12 @@ class StatsScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: List.generate(7, (index) {
-                              final min = baseWeeklyMinutes[index];
+                              final min = weeklyMinutes[index];
                               final isToday = (index + 1) == todayWeekday;
                               // Calculate bar height fraction
-                              final fraction = maxMinutes > 0 ? min / maxMinutes : 0.0;
+                              final fraction = maxMinutes > 0
+                                  ? min / maxMinutes
+                                  : 0.0;
 
                               return Expanded(
                                 child: Column(
@@ -218,7 +260,9 @@ class StatsScreen extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.bold,
-                                        color: isToday ? themeColor : Colors.white38,
+                                        color: isToday
+                                            ? themeColor
+                                            : Colors.white38,
                                       ),
                                     ),
                                     const SizedBox(height: 6),
@@ -227,23 +271,41 @@ class StatsScreen extends StatelessWidget {
                                       child: FractionallySizedBox(
                                         heightFactor: fraction.clamp(0.04, 1.0),
                                         child: Container(
-                                          margin: const EdgeInsets.symmetric(horizontal: 6),
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                          ),
                                           decoration: BoxDecoration(
                                             gradient: LinearGradient(
                                               colors: isToday
-                                                  ? [themeColor, themeColor.withValues(alpha: 0.6)]
-                                                  : [Colors.white24, Colors.white10],
+                                                  ? [
+                                                      themeColor,
+                                                      themeColor.withValues(
+                                                        alpha: 0.6,
+                                                      ),
+                                                    ]
+                                                  : [
+                                                      Colors.white24,
+                                                      Colors.white10,
+                                                    ],
                                               begin: Alignment.topCenter,
                                               end: Alignment.bottomCenter,
                                             ),
-                                            borderRadius: BorderRadius.circular(6),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
                                             boxShadow: isToday
                                                 ? [
                                                     BoxShadow(
-                                                      color: themeColor.withValues(alpha: 0.25),
+                                                      color: themeColor
+                                                          .withValues(
+                                                            alpha: 0.25,
+                                                          ),
                                                       blurRadius: 8,
-                                                      offset: const Offset(0, 2),
-                                                    )
+                                                      offset: const Offset(
+                                                        0,
+                                                        2,
+                                                      ),
+                                                    ),
                                                   ]
                                                 : null,
                                           ),
@@ -256,8 +318,12 @@ class StatsScreen extends StatelessWidget {
                                       weekdays[index],
                                       style: TextStyle(
                                         fontSize: 11,
-                                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                        color: isToday ? themeColor : Colors.white60,
+                                        fontWeight: isToday
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                        color: isToday
+                                            ? themeColor
+                                            : Colors.white60,
                                       ),
                                     ),
                                   ],
@@ -278,12 +344,18 @@ class StatsScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.02),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.05),
+                      ),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.lightbulb_outline, color: themeColor, size: 24),
+                        Icon(
+                          Icons.lightbulb_outline,
+                          color: themeColor,
+                          size: 24,
+                        ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -291,12 +363,20 @@ class StatsScreen extends StatelessWidget {
                             children: [
                               const Text(
                                 'Tip van de dag',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                ),
                               ),
                               const SizedBox(height: 6),
                               Text(
                                 _getProductivityTip(state.completedSessions),
-                                style: const TextStyle(fontSize: 13, color: Colors.white60, height: 1.4),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white60,
+                                  height: 1.4,
+                                ),
                               ),
                             ],
                           ),
@@ -323,10 +403,7 @@ class StatsScreen extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            const Color(0xFF1A1A2E),
-            const Color(0xFF16213E),
-          ],
+          colors: [const Color(0xFF1A1A2E), const Color(0xFF16213E)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -453,7 +530,10 @@ class StatsScreen extends StatelessWidget {
                       height: 8,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [themeColor, themeColor.withValues(alpha: 0.6)],
+                          colors: [
+                            themeColor,
+                            themeColor.withValues(alpha: 0.6),
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
@@ -519,7 +599,11 @@ class StatsScreen extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.visible,
                 ),
@@ -531,7 +615,11 @@ class StatsScreen extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             value,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 4),
           Text(

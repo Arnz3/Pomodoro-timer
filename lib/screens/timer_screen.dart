@@ -5,6 +5,7 @@ import '../widgets/checklist_widget.dart';
 import '../widgets/settings_sheet.dart';
 import '../widgets/timer_painter.dart';
 import '../widgets/avatar_widget.dart';
+import '../widgets/focus_library_sheet.dart';
 import '../models/avatar_level.dart';
 
 class TimerScreen extends StatefulWidget {
@@ -16,7 +17,8 @@ class TimerScreen extends StatefulWidget {
   State<TimerScreen> createState() => _TimerScreenState();
 }
 
-class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStateMixin {
+class _TimerScreenState extends State<TimerScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _fadeController;
 
   @override
@@ -60,7 +62,8 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
 
     if (widget.state.currentMode == TimerMode.focus) {
       title = 'Lekker gewerkt! 🎉';
-      content = 'Tijd voor een welverdiende pauze. Klik om je pauze te starten.';
+      content =
+          'Tijd voor een welverdiende pauze. Klik om je pauze te starten.';
     } else {
       title = 'Pauze voorbij! 💪';
       content = 'Klaar om weer te focussen? Laten we beginnen.';
@@ -87,14 +90,20 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
               },
               child: Text(
                 'Start',
-                style: TextStyle(color: widget.state.getThemeColor(), fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: widget.state.getThemeColor(),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('Sluiten', style: TextStyle(color: Colors.grey)),
+              child: const Text(
+                'Sluiten',
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
           ],
         );
@@ -120,6 +129,25 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
           },
         );
       },
+    );
+  }
+
+  void _showFocusLibrary() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161623),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => FocusLibrarySheet(
+        subjects: widget.state.focusSubjects,
+        selectedId: widget.state.selectedFocusSubjectId,
+        onSelect: widget.state.selectFocusSubject,
+        onAdd: widget.state.addFocusSubject,
+        onDelete: widget.state.deleteFocusSubject,
+        themeColor: widget.state.getThemeColor(),
+      ),
     );
   }
 
@@ -149,11 +177,23 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
                 const SizedBox(width: 8),
                 const Text(
                   'FocusTime',
-                  style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5, fontSize: 20),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                    fontSize: 20,
+                  ),
                 ),
               ],
             ),
             actions: [
+              IconButton(
+                icon: const Icon(
+                  Icons.menu_book_outlined,
+                  color: Colors.white70,
+                ),
+                onPressed: _showFocusLibrary,
+                tooltip: 'Focusbibliotheek',
+              ),
               IconButton(
                 icon: const Icon(Icons.settings, color: Colors.white70),
                 onPressed: _showSettings,
@@ -178,8 +218,12 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final double avatarSize = (constraints.maxWidth * 0.26).clamp(60.0, 108.0).toDouble();
-                  final double ringSize = (constraints.maxWidth * 0.56).clamp(160.0, 240.0).toDouble();
+                  final double avatarSize = (constraints.maxWidth * 0.26)
+                      .clamp(60.0, 108.0)
+                      .toDouble();
+                  final double ringSize = (constraints.maxWidth * 0.56)
+                      .clamp(160.0, 240.0)
+                      .toDouble();
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -199,7 +243,8 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
                                 child: AvatarWidget(
                                   level: widget.state.avatarLevelInfo.level,
                                   isTimerRunning:
-                                      widget.state.timerStatus == TimerStatus.running,
+                                      widget.state.timerStatus ==
+                                      TimerStatus.running,
                                   size: avatarSize,
                                 ),
                               ),
@@ -210,12 +255,16 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
                               Center(
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 4),
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: themeColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                        color: themeColor.withValues(alpha: 0.2), width: 1),
+                                      color: themeColor.withValues(alpha: 0.2),
+                                      width: 1,
+                                    ),
                                   ),
                                   child: Text(
                                     '${widget.state.avatarLevelInfo.emoji}  ${widget.state.avatarLevelInfo.name}',
@@ -238,16 +287,25 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 8),
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: themeColor.withValues(alpha: 0.15),
+                                        color: themeColor.withValues(
+                                          alpha: 0.15,
+                                        ),
                                         borderRadius: BorderRadius.circular(30),
                                         border: Border.all(
-                                            color: themeColor.withValues(alpha: 0.3),
-                                            width: 1),
+                                          color: themeColor.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          width: 1,
+                                        ),
                                       ),
                                       child: Text(
-                                        widget.state.getModeName().toUpperCase(),
+                                        widget.state
+                                            .getModeName()
+                                            .toUpperCase(),
                                         style: TextStyle(
                                           color: themeColor,
                                           fontWeight: FontWeight.w900,
@@ -293,21 +351,27 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
-                                          _formatTime(widget.state.secondsRemaining),
+                                          _formatTime(
+                                            widget.state.secondsRemaining,
+                                          ),
                                           style: const TextStyle(
                                             fontSize: 48,
                                             fontWeight: FontWeight.bold,
                                             letterSpacing: 2.0,
-                                            fontFeatures: [FontFeature.tabularFigures()],
+                                            fontFeatures: [
+                                              FontFeature.tabularFigures(),
+                                            ],
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          widget.state.timerStatus == TimerStatus.running
+                                          widget.state.timerStatus ==
+                                                  TimerStatus.running
                                               ? 'BEZIG'
-                                              : widget.state.timerStatus == TimerStatus.paused
-                                                  ? 'GEPAUZEERD'
-                                                  : 'START KLAAR',
+                                              : widget.state.timerStatus ==
+                                                    TimerStatus.paused
+                                              ? 'GEPAUZEERD'
+                                              : 'START KLAAR',
                                           style: const TextStyle(
                                             fontSize: 11,
                                             letterSpacing: 2,
@@ -337,10 +401,13 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
                                   // Play/Pause button
                                   GestureDetector(
                                     onTap: () {
-                                      if (widget.state.timerStatus == TimerStatus.running) {
+                                      if (widget.state.timerStatus ==
+                                          TimerStatus.running) {
                                         widget.state.pauseTimer();
                                       } else {
-                                        widget.state.startTimer(_onTimerFinishedAlert);
+                                        widget.state.startTimer(
+                                          _onTimerFinishedAlert,
+                                        );
                                       }
                                     },
                                     child: Container(
@@ -351,14 +418,17 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
                                         color: themeColor,
                                         boxShadow: [
                                           BoxShadow(
-                                            color: themeColor.withValues(alpha: 0.4),
+                                            color: themeColor.withValues(
+                                              alpha: 0.4,
+                                            ),
                                             blurRadius: 16,
                                             offset: const Offset(0, 6),
                                           ),
                                         ],
                                       ),
                                       child: Icon(
-                                        widget.state.timerStatus == TimerStatus.running
+                                        widget.state.timerStatus ==
+                                                TimerStatus.running
                                             ? Icons.pause
                                             : Icons.play_arrow,
                                         size: 38,
@@ -391,12 +461,17 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
                                   widget.state.sessionsBeforeLongBreak,
                                   (index) {
                                     final completedInCycle =
-                                        widget.state.completedSessions % widget.state.sessionsBeforeLongBreak;
+                                        widget.state.completedSessions %
+                                        widget.state.sessionsBeforeLongBreak;
                                     final isDone = index < completedInCycle;
-                                    final isCurrent = index == completedInCycle &&
-                                        widget.state.currentMode == TimerMode.focus;
+                                    final isCurrent =
+                                        index == completedInCycle &&
+                                        widget.state.currentMode ==
+                                            TimerMode.focus;
                                     return Container(
-                                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                      ),
                                       width: 12,
                                       height: 12,
                                       decoration: BoxDecoration(
@@ -404,10 +479,13 @@ class _TimerScreenState extends State<TimerScreen> with SingleTickerProviderStat
                                         color: isDone
                                             ? themeColor
                                             : isCurrent
-                                                ? themeColor.withValues(alpha: 0.5)
-                                                : Colors.white10,
+                                            ? themeColor.withValues(alpha: 0.5)
+                                            : Colors.white10,
                                         border: isCurrent
-                                            ? Border.all(color: themeColor, width: 1.5)
+                                            ? Border.all(
+                                                color: themeColor,
+                                                width: 1.5,
+                                              )
                                             : null,
                                       ),
                                     );
@@ -479,7 +557,10 @@ class _LevelUpBanner extends StatelessWidget {
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.5), width: 1.5),
+        border: Border.all(
+          color: const Color(0xFFFFD700).withValues(alpha: 0.5),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFFFFD700).withValues(alpha: 0.15),
@@ -517,10 +598,7 @@ class _LevelUpBanner extends StatelessWidget {
                 ),
                 Text(
                   info.description,
-                  style: const TextStyle(
-                    color: Colors.white60,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
                 ),
               ],
             ),
